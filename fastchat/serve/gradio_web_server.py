@@ -525,7 +525,7 @@ By using this service, users are required to agree to the following terms: The s
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=0.7,
+            value=0.1,
             step=0.1,
             interactive=True,
             label="Temperature",
@@ -540,8 +540,8 @@ By using this service, users are required to agree to the following terms: The s
         )
         max_output_tokens = gr.Slider(
             minimum=16,
-            maximum=1024,
-            value=512,
+            maximum=512,
+            value=128,
             step=64,
             interactive=True,
             label="Max output tokens",

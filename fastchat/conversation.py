@@ -18,6 +18,7 @@ class SeparatorStyle(Enum):
     DOLLY = auto()
     RWKV = auto()
     PHOENIX = auto()
+    STABLELM_JP = auto()
 
 
 @dataclasses.dataclass
@@ -117,6 +118,15 @@ class Conversation:
                     ret += role + ": " + "<s>" + message + "</s>"
                 else:
                     ret += role + ": " + "<s>"
+            return ret
+        elif self.sep_style == SeparatorStyle.STABLELM_JP:
+            ret = self.system + self.sep
+            # always initialize as first round 
+            for role, message in self.messages[-2:]:
+                if message:
+                    ret += role + ": \n" + message + self.sep
+                else:
+                    ret += role + ": "
             return ret
         else:
             raise ValueError(f"Invalid style: {self.sep_style}")
@@ -225,6 +235,21 @@ register_conv_template(
         sep_style=SeparatorStyle.ADD_COLON_SINGLE,
         sep="\n### ",
         stop_str="###",
+    )
+)
+
+# stablelm-jp template
+register_conv_template(
+    Conversation(
+        name="stablelm_jp",
+        system="以下は、タスクを説明する指示と、文脈のある入力の組み合わせです。要求を適切に満たす応答を書きなさい。",
+        roles=("指示", "応答"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.STABLELM_JP,
+        sep="\n\n### ",
+        # stop_str="<|endoftext|>",
+        # stop_token_ids=[3],
     )
 )
 

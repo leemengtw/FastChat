@@ -38,7 +38,12 @@ class BaseAdapter:
         return True
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
-        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+        # FIXME: hardcode for nai tok base models for now. maybe allow specifying tokenizer path separately later
+        if model_path.startswith("/fsx/jp-llm/hf_model"):
+            tokenizer = AutoTokenizer.from_pretrained("/fsx/jp-llm/tokenizers/nai-hf-tokenizer", use_fast=False)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+
         model = AutoModelForCausalLM.from_pretrained(
             model_path, low_cpu_mem_usage=True, **from_pretrained_kwargs
         )
@@ -205,6 +210,29 @@ def add_model_args(parser):
         action="store_true",
         help="Only when using 8-bit quantization: Offload excess weights to the CPU that don't fit on the GPU",
     )
+
+
+class StableLMJpAdapter(BaseAdapter):
+    """The model adapter for stablelm-jp-tuned-x"""
+
+    def match(self, model_path: str):
+        return (
+            "stablelm-jp" in model_path or
+            "/fsx/jp-llm/hf_model" in model_path or
+            "/fsx/jp-llm/instruction_tuning" in model_path 
+        )
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        tokenizer = AutoTokenizer.from_pretrained("/fsx/jp-llm/tokenizers/nai-hf-tokenizer", use_fast=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            **from_pretrained_kwargs,
+        )
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("stablelm_jp")
 
 
 class VicunaAdapter(BaseAdapter):
@@ -508,6 +536,7 @@ class H2OGPTAdapter(BaseAdapter):
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
+register_model_adapter(StableLMJpAdapter)
 register_model_adapter(VicunaAdapter)
 register_model_adapter(T5Adapter)
 register_model_adapter(KoalaAdapter)

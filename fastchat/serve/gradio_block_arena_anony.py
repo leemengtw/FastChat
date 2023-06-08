@@ -389,7 +389,7 @@ Please scroll down and start chatting. You can view a leaderboard of participati
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=0.7,
+            value=0.1,
             step=0.1,
             interactive=True,
             label="Temperature",
@@ -404,8 +404,8 @@ Please scroll down and start chatting. You can view a leaderboard of participati
         )
         max_output_tokens = gr.Slider(
             minimum=16,
-            maximum=1024,
-            value=512,
+            maximum=512,
+            value=128,
             step=64,
             interactive=True,
             label="Max output tokens",

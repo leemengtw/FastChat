@@ -32,8 +32,11 @@ def main(args):
     conv.append_message(conv.roles[0], msg)
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt()
+    print("---- prompt ----")
+    print(prompt)
+    print("---- prompt ----")
 
-    input_ids = tokenizer([prompt]).input_ids
+    input_ids = tokenizer([prompt], add_special_tokens=False).input_ids
     
     if "t5" in args.model_path and args.repetition_penalty == 1.0:
         args.repetition_penalty = 1.2

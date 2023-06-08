@@ -139,3 +139,9 @@ register_model_info(
     "https://github.com/project-baize/baize-chatbot#v2",
     "A chatbot fine-tuned from LLaMA with ChatGPT self-chat data and Self-Disillation with Feedback (SDF) by UCSD and SYSU.",
 )
+register_model_info(
+    ["checkpoint-12700"],
+    "stablelm-jp-0.0.0-a.1_tuned_japanese_alpaca_data",
+    "/fsx/jp-llm/instruction_tuning/outputs/stablelm-jp-0.0.0-a.1_tuned_japanese_alpaca_data/checkpoint-12700",
+    "todo",
+)

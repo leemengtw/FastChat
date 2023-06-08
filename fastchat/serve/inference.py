@@ -21,6 +21,7 @@ from transformers import (
 from transformers.generation.logits_process import (
     LogitsProcessorList,
     RepetitionPenaltyLogitsProcessor,
+    NoRepeatNGramLogitsProcessor,
     TemperatureLogitsWarper,
     TopKLogitsWarper,
     TopPLogitsWarper,
@@ -32,7 +33,7 @@ from fastchat.model.chatglm_model import chatglm_generate_stream
 
 
 def prepare_logits_processor(
-    temperature: float, repetition_penalty: float, top_p: float, top_k: int
+    temperature: float, repetition_penalty: float, top_p: float, top_k: int, no_repeat_ngram_size: int,
 ) -> LogitsProcessorList:
     processor_list = LogitsProcessorList()
     # TemperatureLogitsWarper doesn't accept 0.0, 1.0 makes it a no-op so we skip two cases.
@@ -40,6 +41,8 @@ def prepare_logits_processor(
         processor_list.append(TemperatureLogitsWarper(temperature))
     if repetition_penalty > 1.0:
         processor_list.append(RepetitionPenaltyLogitsProcessor(repetition_penalty))
+    if no_repeat_ngram_size is not None and no_repeat_ngram_size > 0:
+        processor_list.append(NoRepeatNGramLogitsProcessor(no_repeat_ngram_size))
     if 1e-8 <= top_p < 1.0:
         processor_list.append(TopPLogitsWarper(top_p))
     if top_k > 0:
@@ -62,6 +65,7 @@ def generate_stream(
     len_prompt = len(prompt)
     temperature = float(params.get("temperature", 1.0))
     repetition_penalty = float(params.get("repetition_penalty", 1.0))
+    no_repeat_ngram_size = params.get("no_repeat_ngram_size", None)
     top_p = float(params.get("top_p", 1.0))
     top_k = int(params.get("top_k", -1))  # -1 means disable
     max_new_tokens = int(params.get("max_new_tokens", 256))
@@ -71,10 +75,10 @@ def generate_stream(
     stop_token_ids.append(tokenizer.eos_token_id)
 
     logits_processor = prepare_logits_processor(
-        temperature, repetition_penalty, top_p, top_k
+        temperature, repetition_penalty, top_p, top_k, no_repeat_ngram_size
     )
 
-    input_ids = tokenizer(prompt).input_ids
+    input_ids = tokenizer(prompt, add_special_tokens=False).input_ids
     input_echo_len = len(input_ids)
     output_ids = list(input_ids)
 
@@ -297,9 +301,10 @@ def chat_loop(
         gen_params = {
             "model": model_path,
             "prompt": prompt,
-            "temperature": temperature,
-            "repetition_penalty": repetition_penalty,
-            "max_new_tokens": max_new_tokens,
+            "temperature": 0.1,
+            "repetition_penalty": 1.2,
+            "no_repeat_ngram_size": 3,
+            "max_new_tokens": 128,
             "stop": conv.stop_str,
             "stop_token_ids": conv.stop_token_ids,
             "echo": False,
