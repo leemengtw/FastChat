@@ -39,8 +39,8 @@ class BaseAdapter:
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         # FIXME: hardcode for nai tok base models for now. maybe allow specifying tokenizer path separately later
-        if model_path.startswith("/fsx/jp-llm/hf_model"):
-            tokenizer = AutoTokenizer.from_pretrained("/fsx/jp-llm/tokenizers/nai-hf-tokenizer", use_fast=False)
+        if "stablelm-jp" in model_path:
+            tokenizer = AutoTokenizer.from_pretrained("/home/ubuntu/stability-llm/stable-lm-jp/tokenizers/nai-hf-tokenizer", use_fast=False)
         else:
             tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
@@ -217,13 +217,11 @@ class StableLMJpAdapter(BaseAdapter):
 
     def match(self, model_path: str):
         return (
-            "stablelm-jp" in model_path or
-            "/fsx/jp-llm/hf_model" in model_path or
-            "/fsx/jp-llm/instruction_tuning" in model_path 
+            "stablelm-jp" in model_path
         )
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
-        tokenizer = AutoTokenizer.from_pretrained("/fsx/jp-llm/tokenizers/nai-hf-tokenizer", use_fast=False)
+        tokenizer = AutoTokenizer.from_pretrained("/home/ubuntu/stability-llm/stable-lm-jp/tokenizers/nai-hf-tokenizer", use_fast=False)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             low_cpu_mem_usage=True,
@@ -232,6 +230,57 @@ class StableLMJpAdapter(BaseAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("stablelm_jp")
+
+
+class RinnaSAIInstructedAdapter(BaseAdapter):
+    """The model adapter for rinna-instruct-1b_0.1.0 etc (tuned by SAI)"""
+
+    def match(self, model_path: str):
+        return (
+            "rinna-instruct-1b_0.1.0" in model_path 
+        )
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        tokenizer = AutoTokenizer.from_pretrained("rinna/japanese-gpt-1b", use_fast=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            **from_pretrained_kwargs,
+        )
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        # hack
+        return get_conv_template("stablelm_jp")
+
+
+class CALMSAIInstructedAdapter(BaseAdapter):
+    """The model adapter for open-calm-instruct-1b_1.3.0 etc (tuned by SAI)"""
+
+    def match(self, model_path: str):
+        return (
+            "open-calm-instruct-1b_1.3.0" in model_path or
+            "open-calm-instruct-3b_1.3.0" in model_path 
+        )
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        if "open-calm-instruct-1b" in model_path:
+            tokenizer = AutoTokenizer.from_pretrained("cyberagent/open-calm-1b", use_fast=True)
+        elif "open-calm-instruct-3b" in model_path:
+            tokenizer = AutoTokenizer.from_pretrained("cyberagent/open-calm-3b", use_fast=True)
+        else:
+            raise NotImplementedError
+        
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            **from_pretrained_kwargs,
+        )
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        # hack
         return get_conv_template("stablelm_jp")
 
 
@@ -537,6 +586,8 @@ class H2OGPTAdapter(BaseAdapter):
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
 register_model_adapter(StableLMJpAdapter)
+register_model_adapter(RinnaSAIInstructedAdapter)
+register_model_adapter(CALMSAIInstructedAdapter)
 register_model_adapter(VicunaAdapter)
 register_model_adapter(T5Adapter)
 register_model_adapter(KoalaAdapter)

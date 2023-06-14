@@ -348,7 +348,7 @@ By using this service, users are required to agree to the following terms: The s
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=0.7,
+            value=0.1,
             step=0.1,
             interactive=True,
             label="Temperature",

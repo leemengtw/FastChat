@@ -268,9 +268,12 @@ def chat_loop(
     )
     is_chatglm = "chatglm" in str(type(model)).lower()
     is_fastchat_t5 = "t5" in str(type(model)).lower()
+    is_stablelm_jp = "stablelm-jp" in str(type(model)).lower()
 
     # Hardcode T5 repetition penalty to be 1.2
     if is_fastchat_t5 and repetition_penalty == 1.0:
+        repetition_penalty = 1.2
+    if is_stablelm_jp and repetition_penalty == 1.0:
         repetition_penalty = 1.2
 
     # Chat
@@ -302,7 +305,7 @@ def chat_loop(
             "model": model_path,
             "prompt": prompt,
             "temperature": 0.1,
-            "repetition_penalty": 1.2,
+            "repetition_penalty": repetition_penalty,
             "no_repeat_ngram_size": 3,
             "max_new_tokens": 128,
             "stop": conv.stop_str,

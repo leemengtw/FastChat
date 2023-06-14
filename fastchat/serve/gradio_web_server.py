@@ -349,8 +349,14 @@ def http_bot(state, temperature, top_p, max_new_tokens, request: gr.Request):
         # Construct repetition_penalty
         if "t5" in model_name:
             repetition_penalty = 1.2
+        elif "stablelm-jp" in model_name:
+            repetition_penalty = 1.2
         else:
             repetition_penalty = 1.0
+
+        # FIXME: hack:
+        repetition_penalty = 1.2
+
         stream_iter = model_worker_stream_iter(
             conv, model_name, worker_addr, prompt, temperature, repetition_penalty, top_p, max_new_tokens
         )

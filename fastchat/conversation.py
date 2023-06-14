@@ -19,6 +19,8 @@ class SeparatorStyle(Enum):
     RWKV = auto()
     PHOENIX = auto()
     STABLELM_JP = auto()
+    RINNA_SAI_INSTRUCTED = auto()
+    CALM_SAI_INSTRUCTED = auto()
 
 
 @dataclasses.dataclass
@@ -119,7 +121,11 @@ class Conversation:
                 else:
                     ret += role + ": " + "<s>"
             return ret
-        elif self.sep_style == SeparatorStyle.STABLELM_JP:
+        elif self.sep_style in [
+            SeparatorStyle.STABLELM_JP,
+            SeparatorStyle.RINNA_SAI_INSTRUCTED,
+            SeparatorStyle.CALM_SAI_INSTRUCTED,
+            ]:
             ret = self.system + self.sep
             # always initialize as first round 
             for role, message in self.messages[-2:]:

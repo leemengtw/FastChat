@@ -1,0 +1,61 @@
+aws s3 ls s3://stability-llm/stable-lm-jp/instruction_tuning/
+
+
+cd ~
+aws s3 sync s3://stability-llm/stable-lm-jp/instruction_tuning \
+    ~/stability-llm/stable-lm-jp/instruction_tuning \
+    --dryrun
+
+aws s3 sync s3://stability-llm/stable-lm-jp/tokenizers \
+    ~/stability-llm/stable-lm-jp/tokenizers \
+    --dryrun
+
+
+python -m fastchat.serve.gradio_web_server_multi
+
+
+// device0: 2 stablelm-jp 1b
+CUDA_VISIBLE_DEVICES=0 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/instruction_tuning/outputs/stablelm-jp-instruct-1b_1.1.0 \
+    --device cuda \
+    --model-name stablelm-jp-instruct-1b_1.1.0 \
+    --port 31000 \
+    --worker-addr http://localhost:31000
+
+CUDA_VISIBLE_DEVICES=0 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/instruction_tuning/outputs/stablelm-jp-instruct-1b_1.3.0 \
+    --device cuda  \
+    --model-name stablelm-jp-instruct-1b_1.3.0 \
+    --port 31001 \
+    --worker-addr http://localhost:31001
+
+// device1: rinna 1b and calm 1b
+CUDA_VISIBLE_DEVICES=1 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/instruction_tuning/outputs/rinna-instruct-1b_0.1.0 \
+    --device cuda \
+    --model-name rinna-instruct-1b_0.1.0 \
+    --port 31003 \
+    --worker-addr http://localhost:31003
+
+CUDA_VISIBLE_DEVICES=1 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/instruction_tuning/outputs/open-calm-instruct-1b_1.3.0 \
+    --device cuda \
+    --model-name open-calm-instruct-1b_1.3.0 \
+    --port 31004 \
+    --worker-addr http://localhost:31004
+
+// device2: 3b stablelm
+CUDA_VISIBLE_DEVICES=2 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/instruction_tuning/outputs/stablelm-jp-instruct-3b_1.3.0 \
+    --device cuda \
+    --model-name stablelm-jp-instruct-3b_1.3.0 \
+    --port 31002 \
+    --worker-addr http://localhost:31002
+
+// device3: 3b calm
+CUDA_VISIBLE_DEVICES=3 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/instruction_tuning/outputs/open-calm-instruct-3b_1.3.0 \
+    --device cuda \
+    --model-name open-calm-instruct-3b_1.3.0 \
+    --port 31005 \
+    --worker-addr http://localhost:31005
