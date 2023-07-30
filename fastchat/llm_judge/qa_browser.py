@@ -66,16 +66,16 @@ def display_pairwise_answer(
         + get_pairwise_judge_explanation(gamekey, judgment_dict)
     )
 
-    judgment_dict_turn2 = resolve_pairwise_judgment_dict(
-        q,
-        model_judgments_normal_pairwise,
-        model_judgments_math_pairwise,
-        multi_turn=True,
-    )
+    # judgment_dict_turn2 = resolve_pairwise_judgment_dict(
+    #     q,
+    #     model_judgments_normal_pairwise,
+    #     model_judgments_math_pairwise,
+    #     multi_turn=True,
+    # )
 
     explanation_turn2 = (
         "##### Model Judgment (second turn)\n"
-        + get_pairwise_judge_explanation(gamekey, judgment_dict_turn2)
+        # + get_pairwise_judge_explanation(gamekey, judgment_dict_turn2)
     )
 
     return chat_mds + [explanation] + [explanation_turn2]
@@ -98,13 +98,13 @@ def display_single_answer(question_selector, model_selector1, request: gr.Reques
         gamekey, judgment_dict
     )
 
-    judgment_dict_turn2 = resolve_single_judgment_dict(
-        q, model_judgments_normal_single, model_judgments_math_single, multi_turn=True
-    )
+    # judgment_dict_turn2 = resolve_single_judgment_dict(
+    #     q, model_judgments_normal_single, model_judgments_math_single, multi_turn=True
+    # )
 
     explanation_turn2 = (
         "##### Model Judgment (second turn)\n"
-        + get_single_judge_explanation(gamekey, judgment_dict_turn2)
+        # + get_single_judge_explanation(gamekey, judgment_dict_turn2)
     )
 
     return chat_mds + [explanation] + [explanation_turn2]
@@ -336,20 +336,21 @@ def build_single_answer_browser_tab():
     return (category_selector,)
 
 
-block_css = """
-#user_question_1 {
-    background-color: #DEEBF7;
-}
-#user_question_2 {
-    background-color: #E2F0D9;
-}
-#reference {
-    background-color: #FFF2CC;
-}
-#model_explanation {
-    background-color: #FBE5D6;
-}
-"""
+# block_css = """
+# #user_question_1 {
+#     background-color: #DEEBF7;
+# }
+# #user_question_2 {
+#     background-color: #E2F0D9;
+# }
+# #reference {
+#     background-color: #FFF2CC;
+# }
+# #model_explanation {
+#     background-color: #FBE5D6;
+# }
+# """
+block_css = """"""
 
 
 def load_demo():
@@ -361,13 +362,13 @@ def build_demo():
     build_question_selector_map()
 
     with gr.Blocks(
-        title="MT-Bench Browser",
+        title="MT-Bench Japanese Browser",
         theme=gr.themes.Base(text_size=gr.themes.sizes.text_lg),
         css=block_css,
     ) as demo:
         gr.Markdown(
             """
-# MT-Bench Browser
+# MT-Bench Japanese Browser
 The code to generate answers and judgments is at [fastchat.llm_judge](https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge).
 """
         )
@@ -413,6 +414,6 @@ if __name__ == "__main__":
     ) = load_pairwise_model_judgments(pairwise_model_judgment_file)
 
     demo = build_demo()
-    demo.queue(concurrency_count=10, status_update_rate=10, api_open=False).launch(
-        server_name=args.host, server_port=args.port, share=args.share, max_threads=200
+    demo.queue(concurrency_count=1, status_update_rate=10, api_open=False).launch(
+        server_name=args.host, server_port=args.port, share=args.share, max_threads=1
     )

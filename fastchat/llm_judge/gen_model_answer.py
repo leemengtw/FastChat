@@ -83,7 +83,8 @@ def get_model_answers(
         max_gpu_memory=max_gpu_memory,
         load_8bit=False,
         cpu_offloading=False,
-        debug=False,
+        # debug=False,
+        debug=True,
     )
 
     for question in tqdm(questions):
@@ -102,7 +103,18 @@ def get_model_answers(
                 conv.append_message(conv.roles[0], qs)
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
+                # input_ids = tokenizer([prompt]).input_ids  # we could use `add_special_tokens=False` but this might affect some other tokenizer
                 input_ids = tokenizer([prompt]).input_ids
+                no_eos_input_ids = []
+                for input_id in input_ids:
+                    no_eos_input_id = input_id[:-1] if input_id[-1] == tokenizer.eos_token_id else input_id
+                    no_eos_input_ids.append(no_eos_input_id)
+                input_ids = no_eos_input_ids
+
+                # fixme: hardcoding seqlen
+                # https://github.com/lm-sys/FastChat/blob/4e2c942b8d785eb5e2aef1d0df2150e756f381ab/fastchat/model/model_falcon.py#L40C5-L43C77
+                # max_src_len = 2048 - max_new_token - 8
+                # input_ids = input_ids[-max_src_len:]  # truncate from the left
 
                 if temperature < 1e-4:
                     do_sample = False
@@ -111,11 +123,17 @@ def get_model_answers(
 
                 # some models may error out when generating long outputs
                 try:
+                    # todo: apply penaly only for stablelm jp model
+                    # todo: shift
                     output_ids = model.generate(
                         torch.as_tensor(input_ids).cuda(),
                         do_sample=do_sample,
                         temperature=temperature,
                         max_new_tokens=max_new_token,
+                        repetition_penalty=1.1,
+                        no_repeat_ngram_size=10,
+                        top_p=0.9,
+                        top_k=100,
                     )
                     if model.config.is_encoder_decoder:
                         output_ids = output_ids[0]
@@ -159,7 +177,7 @@ def reorg_answer_file(answer_file):
     answers = {}
     with open(answer_file, "r") as fin:
         for l in fin:
-            qid = json.loads(l)["question_id"]
+            qid = int(json.loads(l)["question_id"])
             answers[qid] = l
 
     qids = sorted(list(answers.keys()))

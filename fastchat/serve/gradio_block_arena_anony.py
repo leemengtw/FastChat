@@ -84,15 +84,15 @@ def vote_last_response(states, vote_type, model_selectors, request: gr.Request):
     if ":" not in model_selectors[0]:
         for i in range(15):
             names = (
-                "### Model A: " + states[0].model_name,
-                "### Model B: " + states[1].model_name,
+                "### モデル A: " + states[0].model_name,
+                "### モデル B: " + states[1].model_name,
             )
             yield names + ("",) + (disable_btn,) * 4
             time.sleep(0.2)
     else:
         names = (
-            "### Model A: " + states[0].model_name,
-            "### Model B: " + states[1].model_name,
+            "### モデル A: " + states[0].model_name,
+            "### モデル B: " + states[1].model_name,
         )
         yield names + ("",) + (disable_btn,) * 4
 
@@ -366,19 +366,15 @@ def bot_response_multi(
 
 def build_side_by_side_ui_anony(models):
     notice_markdown = """
-# ⚔️  Chatbot Arena ⚔️ 
+# ⚔️ Chatbot Arena ⚔️ 
 ### Rules
+- models: TODO
 - Chat with two anonymous models side-by-side and vote for which one is better!
-- You can do multiple rounds of conversations before voting.
-- The names of the models will be revealed after your vote. Conversations with identity keywords (e.g., ChatGPT, Bard, Vicuna) or any votes after the names are revealed will not count towards the leaderboard.
-- Click "Clear history" to start a new round.
-- | [Blog](https://lmsys.org/blog/2023-05-03-arena/) | [GitHub](https://github.com/lm-sys/FastChat) | [Paper](https://arxiv.org/abs/2306.05685) | [Twitter](https://twitter.com/lmsysorg) | [Discord](https://discord.gg/HSWAKCrnFx) |
-
-### Terms of use
-By using this service, users are required to agree to the following terms: The service is a research preview intended for non-commercial use only. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. **The service collects user dialogue data and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) license.** The demo works better on desktop devices with a wide screen.
+- The names of the models will be revealed after your vote.
+- Click "履歴削除" to start a new round.
 
 ### Battle
-Please scroll down and start chatting. You can view a leaderboard of participating models in the fourth tab above labeled 'Leaderboard' or by clicking [here](?leaderboard). The models include both closed-source models (e.g., ChatGPT) and open-source models (e.g., Vicuna).
+Please scroll down and start chatting.
 """
 
     states = [gr.State() for _ in range(num_sides)]
@@ -395,7 +391,7 @@ Please scroll down and start chatting. You can view a leaderboard of participati
 
         with gr.Row():
             for i in range(num_sides):
-                label = "Model A" if i == 0 else "Model B"
+                label = "モデル A" if i == 0 else "モデル B"
                 with gr.Column():
                     chatbots[i] = gr.Chatbot(
                         label=label, elem_id=f"chatbot", visible=False, height=550
@@ -403,32 +399,63 @@ Please scroll down and start chatting. You can view a leaderboard of participati
 
         with gr.Box() as button_row:
             with gr.Row():
-                leftvote_btn = gr.Button(value="👈  A is better", interactive=False)
-                rightvote_btn = gr.Button(value="👉  B is better", interactive=False)
-                tie_btn = gr.Button(value="🤝  Tie", interactive=False)
-                bothbad_btn = gr.Button(value="👎  Both are bad", interactive=False)
+                leftvote_btn = gr.Button(value="👈  A の方が良い", interactive=False)
+                rightvote_btn = gr.Button(value="👉  B の方が良い", interactive=False)
+                tie_btn = gr.Button(value="🤝  ドロー", interactive=False)
+                bothbad_btn = gr.Button(value="👎  どっちも悪い", interactive=False)
+
+    with gr.Row(elem_id="preset_prompt_selector_row"):
+        from fastchat.data.prompt import preset_prompts
+
+        categories = list(set(p.category for p in preset_prompts))
+        texts = [p.text for p in preset_prompts]
+
+        with gr.Column(scale=1, min_width=100):
+            preset_prompt_category_selector = gr.Dropdown(
+                choices=categories,
+                value="",
+                interactive=True,
+                show_label=False,
+            ).style(container=False)
+
+        with gr.Column(scale=20):
+            preset_prompt_selector = gr.Dropdown(
+                choices=texts,
+                value="",
+                interactive=True,
+                show_label=False,
+            ).style(container=False)
+        
+        def update_prompt_selector(category):
+            texts = [p.text for p in preset_prompts if p.category == category]
+            return gr.update(choices=texts)
+        
+        preset_prompt_category_selector.change(
+            update_prompt_selector,
+            preset_prompt_category_selector,
+            preset_prompt_selector
+        )
 
     with gr.Row():
         with gr.Column(scale=20):
             textbox = gr.Textbox(
                 show_label=False,
-                placeholder="Enter text and press ENTER",
+                placeholder="テキストを入れて ENTER",
                 visible=False,
-                container=False,
-            )
-        with gr.Column(scale=1, min_width=50):
-            send_btn = gr.Button(value="Send", visible=False)
+            ).style(container=False)
+        with gr.Column(scale=1, min_width=70):
+            send_btn = gr.Button(value="送信", visible=False)
 
     with gr.Row() as button_row2:
-        regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False)
-        clear_btn = gr.Button(value="🗑️  Clear history", interactive=False)
-        share_btn = gr.Button(value="📷  Share")
+        regenerate_btn = gr.Button(value="🔄  再生成", interactive=False)
+        clear_btn = gr.Button(value="🗑️  履歴削除", interactive=False)
+        share_btn = gr.Button(value="📷  シェア")
 
     with gr.Accordion("Parameters", open=False, visible=True) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=0.1,
+            value=1,
             step=0.1,
             interactive=True,
             label="Temperature",
@@ -436,7 +463,7 @@ Please scroll down and start chatting. You can view a leaderboard of participati
         top_p = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=1.0,
+            value=0.9,
             step=0.1,
             interactive=True,
             label="Top P",
@@ -451,6 +478,12 @@ Please scroll down and start chatting. You can view a leaderboard of participati
         )
 
     gr.Markdown(learn_more_md)
+
+    # update textbox to reflect the choice of preset prompt if available
+    def change_textbox(text):
+        return gr.update(value=text)
+    
+    preset_prompt_selector.change(change_textbox, preset_prompt_selector, textbox)
 
     # Register listeners
     btn_list = [

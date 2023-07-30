@@ -83,14 +83,10 @@ def generate_stream(
     logits_processor = prepare_logits_processor(
         temperature, repetition_penalty, top_p, top_k, no_repeat_ngram_size
     )
-<<<<<<< HEAD
 
     input_ids = tokenizer(prompt, add_special_tokens=False).input_ids
     input_echo_len = len(input_ids)
     output_ids = list(input_ids)
-=======
-    input_ids = tokenizer(prompt).input_ids
->>>>>>> main
 
     if model.config.is_encoder_decoder:
         max_src_len = context_len

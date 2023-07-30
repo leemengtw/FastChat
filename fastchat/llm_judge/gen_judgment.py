@@ -154,15 +154,15 @@ def make_judge_single(judge_model, judge_prompts):
     judges = {}
     judges["default"] = Judge(judge_model, judge_prompts["single-v1"])
     judges["math"] = Judge(judge_model, judge_prompts["single-math-v1"], ref_based=True)
-    judges["default-mt"] = Judge(
-        judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True
-    )
-    judges["math-mt"] = Judge(
-        judge_model,
-        judge_prompts["single-math-v1-multi-turn"],
-        ref_based=True,
-        multi_turn=True,
-    )
+    # judges["default-mt"] = Judge(
+    #     judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True
+    # )
+    # judges["math-mt"] = Judge(
+    #     judge_model,
+    #     judge_prompts["single-math-v1-multi-turn"],
+    #     ref_based=True,
+    #     multi_turn=True,
+    # )
     return judges
 
 
@@ -225,6 +225,9 @@ if __name__ == "__main__":
 
     if args.first_n:
         questions = questions[: args.first_n]
+        
+    print("[DEBUG] excluding code, reasoning, math question!")
+    questions = [q for q in questions if not q['category'] in NEED_REF_CATS]
 
     if args.model_list is None:
         models = get_model_list(answer_dir)
@@ -270,23 +273,23 @@ if __name__ == "__main__":
         baseline_model,
         ref_answers,
     )
-    matches += make_match_func(
-        question_default,
-        models,
-        model_answers,
-        judges["default-mt"],
-        baseline_model,
-        multi_turn=True,
-    )
-    matches += make_match_func(
-        question_math,
-        models,
-        model_answers,
-        judges["math-mt"],
-        baseline_model,
-        ref_answers,
-        multi_turn=True,
-    )
+    # matches += make_match_func(
+    #     question_default,
+    #     models,
+    #     model_answers,
+    #     judges["default-mt"],
+    #     baseline_model,
+    #     multi_turn=True,
+    # )
+    # matches += make_match_func(
+    #     question_math,
+    #     models,
+    #     model_answers,
+    #     judges["math-mt"],
+    #     baseline_model,
+    #     ref_answers,
+    #     multi_turn=True,
+    # )
 
     match_stat = {}
     match_stat["bench_name"] = args.bench_name

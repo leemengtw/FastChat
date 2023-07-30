@@ -195,12 +195,14 @@ class Conversation:
             SeparatorStyle.CALM_SAI_INSTRUCTED,
             ]:
             ret = self.system + self.sep
-            # always initialize as first round 
-            for role, message in self.messages[-2:]:
+            # adhoc: always initialize as first round 
+            # for role, message in self.messages[-2:]:
+            for role, message in self.messages:
                 if message:
                     ret += role + ": \n" + message + self.sep
                 else:
                     ret += role + ": "
+            return ret
         elif self.sep_style == SeparatorStyle.ROBIN:
             ret = self.system + self.sep
             for role, message in self.messages:
@@ -340,17 +342,47 @@ register_conv_template(
 # stablelm-jp template
 register_conv_template(
     Conversation(
-        name="stablelm_jp",
+        name="stablelm_jp",  #todo: rename to single-turn
         system="以下は、タスクを説明する指示と、文脈のある入力の組み合わせです。要求を適切に満たす応答を書きなさい。",
         roles=("指示", "応答"),
         messages=(),
         offset=0,
         sep_style=SeparatorStyle.STABLELM_JP,
         sep="\n\n### ",
-        # stop_str="<|endoftext|>",
-        # stop_token_ids=[3],
+        stop_str="<|endoftext|>",
+        stop_token_ids=[3],
     )
 )
+
+register_conv_template(
+    Conversation(
+        name="izumi-lab/stormy-7b-10ep",
+        system="以下はタスクを説明する指示です。要求を適切に満たすような返答を書いてください。\n\n",
+        roles=("指示", "返答"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_SINGLE,
+        sep="\n###",
+        stop_str="###",
+    )
+)
+
+# https://github.com/yuzu-ai/japanese-llm-ranking/blob/main/jrank/templates/rinna.json
+register_conv_template(
+    Conversation(
+        name="rinna",
+        system="",
+        roles=["ユーザー: ", "システム: "],
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="<NL>",
+        # stop_str="###",
+    )
+)
+
+
+
 
 # Vicuna v1.1 template
 register_conv_template(
@@ -910,7 +942,7 @@ register_conv_template(
 )
 
 if __name__ == "__main__":
-    conv = get_conv_template("vicuna_v1.1")
+    conv = get_conv_template("stablelm_jp")
     conv.append_message(conv.roles[0], "Hello!")
     conv.append_message(conv.roles[1], "Hi!")
     conv.append_message(conv.roles[0], "How are you?")

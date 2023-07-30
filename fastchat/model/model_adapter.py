@@ -5,6 +5,8 @@ import os
 import sys
 from typing import Dict, List, Optional
 import warnings
+from typing import Optional, Tuple, Union
+from peft import PeftModel
 
 if sys.version_info >= (3, 9):
     from functools import cache
@@ -23,6 +25,8 @@ from transformers import (
     LlamaTokenizer,
     LlamaForCausalLM,
     T5Tokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizerBase
 )
 
 from fastchat.modules.gptq import GptqConfig, load_gptq_quantized
@@ -259,6 +263,62 @@ def load_model(
     return model, tokenizer
 
 
+import os
+from peft import LoraConfig
+from peft import get_peft_model
+from peft import set_peft_model_state_dict
+
+
+def load_lora_model(
+    model_path: str,
+    lora_weight: str,
+    device: str,
+    num_gpus: int,
+    max_gpu_memory: Optional[str] = None,
+    load_8bit: bool = False,
+    cpu_offloading: bool = False,
+    debug: bool = False,
+) -> Tuple[Union[PreTrainedModel, PeftModel], PreTrainedTokenizerBase]:
+    model: Union[PreTrainedModel, PeftModel]
+    tokenizer: PreTrainedTokenizerBase
+    model, tokenizer = load_model(
+        model_path=model_path,
+        device=device,
+        num_gpus=num_gpus,
+        max_gpu_memory=max_gpu_memory,
+        load_8bit=load_8bit,
+        cpu_offloading=cpu_offloading,
+        debug=debug,
+    )
+    if lora_weight is not None:
+        # model = PeftModelForCausalLM.from_pretrained(model, model_path, **kwargs)
+        config = LoraConfig.from_pretrained(lora_weight)
+        model = get_peft_model(model, config)
+
+        # Check the available weights and load them
+        checkpoint_name = os.path.join(
+            lora_weight, "pytorch_model.bin"
+        )  # Full checkpoint
+        if not os.path.exists(checkpoint_name):
+            checkpoint_name = os.path.join(
+                lora_weight, "adapter_model.bin"
+            )  # only LoRA model - LoRA config above has to fit
+        # The two files above have a different name depending on how they were saved,
+        # but are actually the same.
+        if os.path.exists(checkpoint_name):
+            adapters_weights = torch.load(checkpoint_name)
+            set_peft_model_state_dict(model, adapters_weights)
+        else:
+            raise IOError(f"Checkpoint {checkpoint_name} not found")
+
+    if debug:
+        print(model)
+
+    model.eval()
+
+    return model, tokenizer
+
+
 def get_conversation_template(model_path: str) -> Conversation:
     """Get the default conversation template."""
     adapter = get_model_adapter(model_path)
@@ -375,10 +435,16 @@ def add_model_args(parser):
         "--gptq-act-order",
         action="store_true",
         help="Whether to apply the activation order GPTQ heuristic",
+        
+    )
+    parser.add_argument(
+        "--lora-weight-path",
+        type=str,
+        default=None,
     )
 
 
-class StableLMJpAdapter(BaseAdapter):
+class StableLMJpAdapter(BaseModelAdapter):
     """The model adapter for stablelm-jp-tuned-x"""
 
     def match(self, model_path: str):
@@ -399,7 +465,28 @@ class StableLMJpAdapter(BaseAdapter):
         return get_conv_template("stablelm_jp")
 
 
-class RinnaSAIInstructedAdapter(BaseAdapter):
+class StormyAdapter(BaseModelAdapter):
+    def match(self, model_path: str):
+        return "izumi-lab/stormy-7b-10ep" in model_path
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("izumi-lab/stormy-7b-10ep")
+
+
+class CALMAdapter(StormyAdapter):
+    def match(self, model_path: str):
+        return "cyberagent/open-calm-7b" in model_path
+
+
+class RinnaAdapter(BaseModelAdapter):
+    def match(self, model_path: str):
+        return "rinna" in model_path
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("rinna")
+
+
+class RinnaSAIInstructedAdapter(BaseModelAdapter):
     """The model adapter for rinna-instruct-1b_0.1.0 etc (tuned by SAI)"""
 
     def match(self, model_path: str):
@@ -421,7 +508,7 @@ class RinnaSAIInstructedAdapter(BaseAdapter):
         return get_conv_template("stablelm_jp")
 
 
-class CALMSAIInstructedAdapter(BaseAdapter):
+class CALMSAIInstructedAdapter(BaseModelAdapter):
     """The model adapter for open-calm-instruct-1b_1.3.0 etc (tuned by SAI)"""
 
     def match(self, model_path: str):
@@ -450,7 +537,7 @@ class CALMSAIInstructedAdapter(BaseAdapter):
         return get_conv_template("stablelm_jp")
 
 
-class VicunaAdapter(BaseAdapter):
+class VicunaAdapter(BaseModelAdapter):
     "Model adapater for vicuna-v1.1"
 def remove_parent_directory_name(model_path):
     """Remove parent directory name."""
@@ -1276,10 +1363,18 @@ class CuteGPTAdapter(BaseModelAdapter):
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
-register_model_adapter(StableLMJpAdapter)
-register_model_adapter(RinnaSAIInstructedAdapter)
-register_model_adapter(CALMSAIInstructedAdapter)
-register_model_adapter(PeftModelAdapter)
+japanese_adapters = [
+    StableLMJpAdapter,
+    StormyAdapter,
+    CALMAdapter,
+    RinnaAdapter,
+    RinnaSAIInstructedAdapter,
+    CALMSAIInstructedAdapter,
+]
+
+for adapter in japanese_adapters:
+    register_model_adapter(adapter)
+
 register_model_adapter(VicunaAdapter)
 register_model_adapter(AiroborosAdapter)
 register_model_adapter(LongChatAdapter)
