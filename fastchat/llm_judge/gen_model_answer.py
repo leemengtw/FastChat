@@ -83,8 +83,8 @@ def get_model_answers(
         max_gpu_memory=max_gpu_memory,
         load_8bit=False,
         cpu_offloading=False,
-        # debug=False,
-        debug=True,
+        debug=False,
+        # debug=True,
     )
 
     for question in tqdm(questions):
@@ -132,8 +132,7 @@ def get_model_answers(
                         max_new_tokens=max_new_token,
                         repetition_penalty=1.1,
                         no_repeat_ngram_size=10,
-                        top_p=0.9,
-                        top_k=100,
+                        top_p=0.95,
                     )
                     if model.config.is_encoder_decoder:
                         output_ids = output_ids[0]

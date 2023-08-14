@@ -196,8 +196,8 @@ class Conversation:
             ]:
             ret = self.system + self.sep
             # adhoc: always initialize as first round 
-            # for role, message in self.messages[-2:]:
-            for role, message in self.messages:
+            for role, message in self.messages[-2:]:
+            # for role, message in self.messages:
                 if message:
                     ret += role + ": \n" + message + self.sep
                 else:

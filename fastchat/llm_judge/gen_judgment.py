@@ -226,8 +226,8 @@ if __name__ == "__main__":
     if args.first_n:
         questions = questions[: args.first_n]
         
-    print("[DEBUG] excluding code, reasoning, math question!")
-    questions = [q for q in questions if not q['category'] in NEED_REF_CATS]
+    # print("[DEBUG] only process code, reasoning, math question!")
+    # questions = [q for q in questions if q['category'] in NEED_REF_CATS]
 
     if args.model_list is None:
         models = get_model_list(answer_dir)

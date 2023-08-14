@@ -259,6 +259,7 @@ def model_worker_stream_iter(
     repetition_penalty,
     top_p,
     max_new_tokens,
+    seed,
 ):
     # Make requests
     gen_params = {
@@ -268,6 +269,7 @@ def model_worker_stream_iter(
         "repetition_penalty": repetition_penalty,
         "top_p": top_p,
         "max_new_tokens": max_new_tokens,
+        "seed": seed,
         "stop": conv.stop_str,
         "stop_token_ids": conv.stop_token_ids,
         "echo": False,
@@ -288,12 +290,17 @@ def model_worker_stream_iter(
             yield data
 
 
-def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request):
+def bot_response(state, temperature, top_p, max_new_tokens, seed, request: gr.Request):
     logger.info(f"bot_response. ip: {request.client.host}")
     start_tstamp = time.time()
     temperature = float(temperature)
     top_p = float(top_p)
     max_new_tokens = int(max_new_tokens)
+    try:
+        seed = int(seed)
+    except:
+        pass
+    seed = seed if seed != -1 else random.randrange(0, 100000000)
 
     if state.skip_next:
         # This generate call is skipped due to invalid inputs
@@ -335,6 +342,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
                 disable_btn,
                 enable_btn,
                 enable_btn,
+                seed,
             )
             return
 
@@ -345,13 +353,13 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
         # Set repetition_penalty
         if "t5" in model_name:
             repetition_penalty = 1.2
-        elif "stablelm-jp" in model_name:
-            repetition_penalty = 1.2
+        elif "stablelm" in model_name:
+            repetition_penalty = 1.1
         else:
             repetition_penalty = 1.0
 
         # meng: FIXME: hack:
-        repetition_penalty = 1.2
+        repetition_penalty = 1.1
 
         stream_iter = model_worker_stream_iter(
             conv,
@@ -362,10 +370,11 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
             repetition_penalty,
             top_p,
             max_new_tokens,
+            seed=seed,
         )
 
     conv.update_last_message("▌")
-    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5 + (seed,)
 
     try:
         for data in stream_iter:
@@ -374,7 +383,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
                 if "vicuna" in model_name:
                     output = post_process_code(output)
                 conv.update_last_message(output + "▌")
-                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5 + (seed,)
             else:
                 output = data["text"] + f"\n\n(error_code: {data['error_code']})"
                 conv.update_last_message(output)
@@ -384,6 +393,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
                     disable_btn,
                     enable_btn,
                     enable_btn,
+                    seed,
                 )
                 return
             time.sleep(0.015)
@@ -398,6 +408,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
             disable_btn,
             enable_btn,
             enable_btn,
+            seed,
         )
         return
     except Exception as e:
@@ -411,12 +422,13 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
             disable_btn,
             enable_btn,
             enable_btn,
+            seed,
         )
         return
 
     # Delete "▌"
     conv.update_last_message(conv.messages[-1][-1][:-1])
-    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
+    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5 + (seed,)
 
     finish_tstamp = time.time()
     logger.info(f"{output}")
@@ -493,22 +505,11 @@ def get_model_description_md(models):
 
 
 def build_single_model_ui(models, add_promotion_links=False):
-    promotion = (
-        """
-- Introducing Llama 2: The Next Generation Open Source Large Language Model. [[Website]](https://ai.meta.com/llama/)
-- Vicuna: An Open-Source Chatbot Impressing GPT-4 with 90% ChatGPT Quality. [[Blog]](https://lmsys.org/blog/2023-03-30-vicuna/)
-- | [GitHub](https://github.com/lm-sys/FastChat) | [Twitter](https://twitter.com/lmsysorg) | [Discord](https://discord.gg/HSWAKCrnFx) |
-"""
-        if add_promotion_links
-        else ""
-    )
+    promotion = ""
 
     notice_markdown = f"""
 # 🏔️ Chat with Open Large Language Models
 {promotion}
-
-### Terms of use
-By using this service, users are required to agree to the following terms: The service is a research preview intended for non-commercial use only. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. **The service collects user dialogue data and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) license.**
 
 ### Choose a model to chat with
 """
@@ -550,30 +551,36 @@ By using this service, users are required to agree to the following terms: The s
         regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False)
         clear_btn = gr.Button(value="🗑️  Clear history", interactive=False)
 
-    with gr.Accordion("Parameters", open=False, visible=False) as parameter_row:
+    with gr.Accordion("Parameters", open=True, visible=False) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=0.1,
-            step=0.1,
+            value=0.7,
+            step=0.05,
             interactive=True,
             label="Temperature",
         )
         top_p = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=1.0,
-            step=0.1,
+            value=0.95,
+            step=0.05,
             interactive=True,
             label="Top P",
         )
         max_output_tokens = gr.Slider(
             minimum=16,
             maximum=512,
-            value=128,
+            value=256,
             step=64,
             interactive=True,
             label="Max output tokens",
+        )
+        seed = gr.Number(
+            value=-1,
+            minimum=-1,
+            interactive=True,
+            label="Random seed",
         )
 
     gr.Markdown(learn_more_md)
@@ -597,8 +604,8 @@ By using this service, users are required to agree to the following terms: The s
     )
     regenerate_btn.click(regenerate, state, [state, chatbot, textbox] + btn_list).then(
         bot_response,
-        [state, temperature, top_p, max_output_tokens],
-        [state, chatbot] + btn_list,
+        [state, temperature, top_p, max_output_tokens, seed],
+        [state, chatbot] + btn_list + [seed],
     )
     clear_btn.click(clear_history, None, [state, chatbot, textbox] + btn_list)
 
@@ -608,15 +615,15 @@ By using this service, users are required to agree to the following terms: The s
         add_text, [state, model_selector, textbox], [state, chatbot, textbox] + btn_list
     ).then(
         bot_response,
-        [state, temperature, top_p, max_output_tokens],
-        [state, chatbot] + btn_list,
+        [state, temperature, top_p, max_output_tokens, seed],
+        [state, chatbot] + btn_list + [seed],
     )
     send_btn.click(
         add_text, [state, model_selector, textbox], [state, chatbot, textbox] + btn_list
     ).then(
         bot_response,
-        [state, temperature, top_p, max_output_tokens],
-        [state, chatbot] + btn_list,
+        [state, temperature, top_p, max_output_tokens, seed],
+        [state, chatbot] + btn_list + [seed],
     )
 
     return state, model_selector, chatbot, textbox, send_btn, button_row, parameter_row

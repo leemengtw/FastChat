@@ -222,7 +222,8 @@ def build_pairwise_browser_tab():
                 if i == 0:
                     value = models[0]
                 else:
-                    value = "gpt-3.5-turbo"
+                    # value = "gpt-3.5-turbo"
+                    value = "rinna-3.6b-instruction-ppo"
                 model_selectors[i] = gr.Dropdown(
                     choices=models,
                     value=value,
@@ -350,7 +351,17 @@ def build_single_answer_browser_tab():
 #     background-color: #FBE5D6;
 # }
 # """
-block_css = """"""
+block_css = """
+#user_question_1 {
+    background-color: darkblue;
+}
+#user_question_2 {
+    background-color: darkblue;
+}
+#model_explanation {
+    background-color: cadetblue;
+}
+"""
 
 
 def load_demo():
@@ -362,13 +373,13 @@ def build_demo():
     build_question_selector_map()
 
     with gr.Blocks(
-        title="MT-Bench Japanese Browser",
+        title="Japanese MT-Bench Browser",
         theme=gr.themes.Base(text_size=gr.themes.sizes.text_lg),
         css=block_css,
     ) as demo:
         gr.Markdown(
             """
-# MT-Bench Japanese Browser
+# Japanese MT-Bench Browser
 The code to generate answers and judgments is at [fastchat.llm_judge](https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge).
 """
         )

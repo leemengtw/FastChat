@@ -24,7 +24,6 @@ API_ERROR_OUTPUT = "$ERROR$"
 TIE_DELTA = 0.1
 
 # Categories that need reference answers
-# meng: fix this
 NEED_REF_CATS = [
     "math", "reasoning", "coding"
     ]
@@ -585,6 +584,7 @@ def resolve_single_judgment_dict(
         return model_judgments_normal[("gpt-4", "single-v1-multi-turn")]
 
     if question["category"] in NEED_REF_CATS:
+        # return {}
         return model_judgments_math[("gpt-4", "single-math-v1")]
     else:
         return model_judgments_normal[("gpt-4", "single-v1")]

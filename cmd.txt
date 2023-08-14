@@ -10,6 +10,47 @@ aws s3 sync s3://stability-llm/stable-lm-jp/tokenizers \
     ~/stability-llm/stable-lm-jp/tokenizers \
     --dryrun
 
+aws s3 sync s3://stability-llm/stable-lm-jp/sft/models \
+    ~/stability-llm/stable-lm-jp/sft/models \
+    --exclude "*state*" \
+    --dryrun
+
+
+on cluster:
+aws s3 sync /fsx/proj-jp-stablegpt/sft/models/stablelm-jp-instruct-7b_2.3.4 \
+    s3://stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_2.3.4 \
+    --exclude "*state*" \
+    --dryrun
+
+on ec2:
+aws s3 sync s3://stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_2.3.4 \
+    ~/stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_2.3.4 \
+    --exclude "*state*" \
+    --dryrun
+
+on cluster:
+aws s3 sync /fsx/proj-jp-stablegpt/hf_model/7b-jav2_rp-sl2k-slw_fixed-conversion_w-codes \
+    s3://stability-llm/stable-lm-jp/hf_model/7b-jav2_rp-sl2k-slw_fixed-conversion_w-codes \
+    --dryrun
+
+on ec2:
+aws s3 sync s3://stability-llm/stable-lm-jp/hf_model/7b-jav2_rp-sl2k-slw_fixed-conversion_w-codes \
+    ~/stability-llm/stable-lm-jp/hf_model/7b-jav2_rp-sl2k-slw_fixed-conversion_w-codes \
+    --exclude "*state*" \
+    --dryrun
+
+on cluster:
+aws s3 sync /fsx/proj-jp-stablegpt/sft/models/stablelm-jp-instruct-7b_5.11.4 \
+    s3://stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_5.11.4 \
+    --exclude "*state*" \
+    --dryrun
+
+on ec2:
+aws s3 sync s3://stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_5.11.4 \
+    ~/stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_5.11.4 \
+    --exclude "*state*" \
+    --dryrun
+
 
 python -m fastchat.serve.gradio_web_server_multi
 
@@ -59,3 +100,100 @@ CUDA_VISIBLE_DEVICES=3 python -m fastchat.serve.model_worker \
     --model-name open-calm-instruct-3b_1.3.0 \
     --port 31005 \
     --worker-addr http://localhost:31005
+
+
+
+CUDA_VISIBLE_DEVICES=3 python -m fastchat.serve.model_worker \
+    --model-path rinna/japanese-gpt-neox-3.6b \
+    --device cuda \
+    --model-name rinna-3.6b \
+    --port 31003 \
+    --worker-addr http://localhost:31003
+
+CUDA_VISIBLE_DEVICES=4 python -m fastchat.serve.model_worker \
+    --model-path rinna/japanese-gpt-neox-3.6b-instruction-sft-v2 \
+    --device cuda \
+    --model-name rinna-3.6b-sft-v2 \
+    --port 31004 \
+    --worker-addr http://localhost:31004
+
+CUDA_VISIBLE_DEVICES=3 python -m fastchat.serve.model_worker \
+    --model-path rinna/japanese-gpt-neox-3.6b-instruction-ppo \
+    --device cuda \
+    --model-name rinna-3.6b-ppo \
+    --port 31003 \
+    --worker-addr http://localhost:31003
+
+CUDA_VISIBLE_DEVICES=6 python -m fastchat.serve.model_worker \
+    --model-path cyberagent/open-calm-7b \
+    --max-gpu-memory 16GiB \
+    --device cuda \
+    --model-name cyberagent/open-calm-7b \
+    --port 31006 \
+    --worker-addr http://localhost:31006
+
+
+CUDA_VISIBLE_DEVICES=7 python -m fastchat.serve.model_worker \
+    --model-path cyberagent/open-calm-7b \
+    --lora-weight-path izumi-lab/stormy-7b-10ep \
+    --max-gpu-memory 16GiB \
+    --device cuda \
+    --model-name izumi-lab/stormy-7b-10ep \
+    --port 31007 \
+    --worker-addr http://localhost:31007
+
+
+cd repos/FastChat/log/;conda activate fastchat
+CUDA_VISIBLE_DEVICES=2 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-3b_1.5.2 \
+    --device cuda \
+    --model-name stablelm-jp-instruct-3b_1.5.2 \
+    --port 31002 \
+    --worker-addr http://localhost:31002
+
+
+# testing
+
+```
+python -m fastchat.serve.test_message --model-name stablelm-jp-instruct-3b_1.5.2
+```
+
+
+```
+python3 -m fastchat.serve.cli --model lmsys/vicuna-7b-v1.3 --debug
+```
+
+
+
+
+ngrok start --all
+
+```text
+version: "2"
+authtoken: 2ErbSTppoDFfhOLvaHXnaB3ibsv_5UdMYipgKtPdW2JgzmJGa
+tunnels:
+  fastchat:
+    proto: http
+    addr: 7860
+    domain: chatbot-arena.ngrok.io
+  labelstudio:
+    proto: http
+    addr: 8080
+    inspect: false
+```
+
+
+CUDA_VISIBLE_DEVICES=0 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_5.3.4 \
+    --device cuda \
+    --model-name stablelm-jp-instruct-7b_5.3.4 \
+    --port 31000 \
+    --worker-addr http://localhost:31000
+
+
+CUDA_VISIBLE_DEVICES=1 python -m fastchat.serve.model_worker \
+    --model-path /home/ubuntu/stability-llm/stable-lm-jp/sft/models/stablelm-jp-instruct-7b_5.11.4 \
+    --device cuda \
+    --model-name japanese-stablelm-instruct-alpha-7b \
+    --port 31001 \
+    --worker-addr http://localhost:31001

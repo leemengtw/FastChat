@@ -55,6 +55,8 @@ def prepare_logits_processor(
         processor_list.append(TopKLogitsWarper(top_k))
     return processor_list
 
+import random
+
 
 @torch.inference_mode()
 def generate_stream(
@@ -75,6 +77,7 @@ def generate_stream(
     top_p = float(params.get("top_p", 1.0))
     top_k = int(params.get("top_k", -1))  # -1 means disable
     max_new_tokens = int(params.get("max_new_tokens", 256))
+    seed = params.get("seed", None)
     echo = bool(params.get("echo", True))
     stop_str = params.get("stop", None)
     stop_token_ids = params.get("stop_token_ids", None) or []
@@ -83,6 +86,11 @@ def generate_stream(
     logits_processor = prepare_logits_processor(
         temperature, repetition_penalty, top_p, top_k, no_repeat_ngram_size
     )
+
+    if seed:
+        print(f"{seed=}")
+        torch.manual_seed(seed)
+
 
     input_ids = tokenizer(prompt, add_special_tokens=False).input_ids
     input_echo_len = len(input_ids)

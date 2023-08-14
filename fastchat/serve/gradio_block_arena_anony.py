@@ -322,6 +322,7 @@ def bot_response_multi(
     temperature,
     top_p,
     max_new_tokens,
+    seed,
     request: gr.Request,
 ):
     logger.info(f"bot_response_multi (anony). ip: {request.client.host}")
@@ -333,7 +334,7 @@ def bot_response_multi(
             state1,
             state0.to_gradio_chatbot(),
             state1.to_gradio_chatbot(),
-        ) + (no_change_btn,) * 6
+        ) + (no_change_btn,) * 6 + (seed,)
         return
 
     states = [state0, state1]
@@ -345,7 +346,8 @@ def bot_response_multi(
                 temperature,
                 top_p,
                 max_new_tokens,
-                request,
+                seed=seed,
+                request=request,
             )
         )
 
@@ -359,7 +361,7 @@ def bot_response_multi(
                 stop = False
             except StopIteration:
                 pass
-        yield states + chatbots + [disable_btn] * 6
+        yield states + chatbots + [disable_btn] * 6 + [seed]
         if stop:
             break
 
@@ -451,30 +453,36 @@ Please scroll down and start chatting.
         clear_btn = gr.Button(value="🗑️  履歴削除", interactive=False)
         share_btn = gr.Button(value="📷  シェア")
 
-    with gr.Accordion("Parameters", open=False, visible=True) as parameter_row:
+    with gr.Accordion("Parameters", open=True, visible=True) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=1,
-            step=0.1,
+            value=0.7,
+            step=0.05,
             interactive=True,
             label="Temperature",
         )
         top_p = gr.Slider(
             minimum=0.0,
             maximum=1.0,
-            value=0.9,
-            step=0.1,
+            value=0.95,
+            step=0.05,
             interactive=True,
             label="Top P",
         )
         max_output_tokens = gr.Slider(
             minimum=16,
             maximum=512,
-            value=128,
+            value=256,
             step=64,
             interactive=True,
             label="Max output tokens",
+        )
+        seed = gr.Number(
+            value=-1,
+            minimum=-1,
+            interactive=True,
+            label="Random seed",
         )
 
     gr.Markdown(learn_more_md)
@@ -518,8 +526,8 @@ Please scroll down and start chatting.
         regenerate, states, states + chatbots + [textbox] + btn_list
     ).then(
         bot_response_multi,
-        states + [temperature, top_p, max_output_tokens],
-        states + chatbots + btn_list,
+        states + [temperature, top_p, max_output_tokens, seed],
+        states + chatbots + btn_list + [seed],
     ).then(
         flash_buttons, [], btn_list
     )
@@ -555,8 +563,8 @@ function (a, b, c, d) {
         states + chatbots + [textbox] + btn_list,
     ).then(
         bot_response_multi,
-        states + [temperature, top_p, max_output_tokens],
-        states + chatbots + btn_list,
+        states + [temperature, top_p, max_output_tokens, seed],
+        states + chatbots + btn_list + [seed],
     ).then(
         flash_buttons, [], btn_list
     )
@@ -567,8 +575,8 @@ function (a, b, c, d) {
         states + chatbots + [textbox] + btn_list,
     ).then(
         bot_response_multi,
-        states + [temperature, top_p, max_output_tokens],
-        states + chatbots + btn_list,
+        states + [temperature, top_p, max_output_tokens, seed],
+        states + chatbots + btn_list + [seed],
     ).then(
         flash_buttons, [], btn_list
     )

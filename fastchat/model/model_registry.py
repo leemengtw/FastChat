@@ -236,3 +236,16 @@ register_model_info(
     "https://huggingface.co/internlm/internlm-chat-7b",
     "InternLM is a multi-language large-scale language model (LLM), developed by SHLAB.",
 )
+register_model_info(
+    ["stablelm-jp-instruct-7b_5.3.4"],
+    "StableLM Ja Alpha 7B 5.3.4",
+    "https://projectstability.slack.com/archives/C050E718R0T/p1691042755216519?thread_ts=1690968318.091489&cid=C050E718R0T",
+    "最新の指示応答モデル",
+)
+
+register_model_info(
+    ["rinna-3.6b-ppo"],
+    "Rinna 3.6B PPO",
+    "",
+    "",
+)
